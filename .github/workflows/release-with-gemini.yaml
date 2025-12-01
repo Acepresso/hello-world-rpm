@@ -87,6 +87,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read' # For Gemini CLI to write release-notes.md file
+    outputs:
+      release_notes: ${{ steps.run_gemini.outputs.summary }}
+
     steps:
 
       - name: Harden Runner
@@ -105,8 +108,8 @@ jobs:
         run: |
           git fetch --tags
 
-      - name: Generate release notes
-        id: generate_release_notes
+      - name: Run Gemini
+        id: run_gemini
         uses: google-github-actions/run-gemini-cli@v0
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
@@ -136,7 +139,7 @@ jobs:
 
   create_release:
     needs: [get_info, generate_release_notes]
-    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success' && needs.generate_release_notes.outputs.summary != '' }}
+    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success' && needs.generate_release_notes.outputs.release_notes != '' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -169,6 +172,6 @@ jobs:
         with:
           name: ${{ needs.get_info.outputs.next_version }}
           tag_name: ${{ needs.get_info.outputs.next_version }}
-          body: ${{ needs.generate_release_notes.outputs.summary}}
+          body: ${{ needs.generate_release_notes.outputs.release_notes}}
           make_latest: false
           generate_release_notes: false
