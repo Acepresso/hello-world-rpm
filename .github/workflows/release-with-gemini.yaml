@@ -82,11 +82,10 @@ jobs:
   generate_release_notes:
 
     needs: get_info
-    if: needs.get_info.outputs.changed == 'true'
+    if: ${{ needs.get_info.outputs.changed == 'true' && needs.get_info.outputs.changelog != '' }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    permissions:
-      contents: 'read' # For Gemini CLI to write release-notes.md file
+    permissions: {}
     outputs:
       release_notes: ${{ steps.run_gemini.outputs.summary }}
 
@@ -97,16 +96,6 @@ jobs:
         with:
           egress-policy: audit
           disable-telemetry: true
-
-      - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-        with:
-          fetch-depth: 0
-
-      - name: Fetch tags
-        id: fetch_tags
-        run: |
-          git fetch --tags
 
       - name: Run Gemini
         id: run_gemini
