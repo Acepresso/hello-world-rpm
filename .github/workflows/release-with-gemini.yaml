@@ -90,6 +90,7 @@ jobs:
           git fetch --tags
 
       - name: Generate release notes
+        id: generate_release_notes
         uses: google-github-actions/run-gemini-cli@v0
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
@@ -97,6 +98,11 @@ jobs:
             {
               "sandbox": false,
               "autoAccept": true
+          #"coreTools": [
+            #"run_shell_command(cat)",
+            #"run_shell_command(printf)",
+            #"run_shell_command(git log)"
+            #  ]
             }
           prompt: |
             Make a release notes based on all notable changes since the tag
@@ -111,19 +117,11 @@ jobs:
             Don't create a title for the release.
             Preface the release notes with a brief summary of the release.
             The summary should also refer to changes in policies and policy rules.
-            Also save the release notes in a file named "release-notes.md".
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-notes
-          path: release-notes.md
-          if-no-files-found: error
 
 
   create_release:
     needs: [get_info, generate_release_notes]
-    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success'}}
+    if: ${{ needs.get_info.outputs.changed == 'true' && needs.generate_release_notes.result == 'success' && needs.generate_release_notes.outputs.summary != '' }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -151,16 +149,11 @@ jobs:
           source hack/add-auto-tag.sh
           git push -f --tags
 
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: release-notes
-
       - name: Create a release
         uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           name: ${{ needs.get_info.outputs.next_version }}
           tag_name: ${{ needs.get_info.outputs.next_version }}
-          body_path: "release-notes.md"
+          body: ${{ needs.generate_release_notes.outputs.summary}}
           make_latest: false
           generate_release_notes: false
