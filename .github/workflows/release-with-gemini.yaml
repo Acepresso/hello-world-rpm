@@ -98,11 +98,6 @@ jobs:
             {
               "sandbox": false,
               "autoAccept": true
-          #"coreTools": [
-            #"run_shell_command(cat)",
-            #"run_shell_command(printf)",
-            #"run_shell_command(git log)"
-            #  ]
             }
           prompt: |
             Make a release notes based on all notable changes since the tag
