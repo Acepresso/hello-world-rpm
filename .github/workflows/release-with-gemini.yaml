@@ -37,6 +37,7 @@ jobs:
       latest_tag_sha: ${{ steps.get_info.outputs.latest_tag_sha }}
       changed: ${{ steps.get_info.outputs.changed }}
       next_version: ${{ steps.get_info.outputs.next_version }}
+      changelog: ${{ steps.get_changelog.outputs.changelog }}
 
     steps:
 
@@ -62,6 +63,21 @@ jobs:
           echo latest_tag_sha=$LATEST_TAG_SHA | tee -a "$GITHUB_OUTPUT"
           echo changed=$HAVE_CHANGED | tee -a "$GITHUB_OUTPUT"
           echo next_version=$NEXT_VERSION | tee -a "$GITHUB_OUTPUT"
+
+      - name: Get changelog
+        id: get_changelog
+        run: |
+          set -e
+          git fetch --tags
+
+          # Define a unique delimiter (e.g., EOF or a random string)
+          DELIMITER=$(openssl rand -hex 8)
+
+          # Assemble the multiline content
+          echo "changelog<<$DELIMITER" | tee -a "$GITHUB_OUTPUT"
+          git log ${{ steps.get_info.outputs.latest_tag_sha }}..HEAD | tee -a "$GITHUB_OUTPUT"
+          echo "$DELIMITER" >> "$GITHUB_OUTPUT"
+
 
   generate_release_notes:
 
@@ -101,8 +117,8 @@ jobs:
             }
           prompt: |
             Make a release notes based on all notable changes since the tag
-            ${{needs.get_info.outputs.latest_tag}}.
-            The changelog is listed in the file named CHANGELOG.txt.
+            ${{needs.get_info.outputs.latest_tag}}. I will provide you with 
+            the changelog.
             Categorize it nicely with emojis, output as Markdown.
             For each change that you mention in the release notes:
               - Summarize the change in one line
@@ -112,6 +128,10 @@ jobs:
             Don't create a title for the release.
             Preface the release notes with a brief summary of the release.
             The summary should also refer to changes in policies and policy rules.
+
+            The changelog is following below:
+
+            ${{ needs.get_info.outputs.changelog}}
 
 
   create_release:
