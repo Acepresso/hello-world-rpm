@@ -105,7 +105,8 @@ jobs:
           settings: |-
             {
               "sandbox": false,
-              "autoAccept": true
+              "autoAccept": false,
+              "coreTools": []
             }
           prompt: |
             Make a release notes based on all notable changes since the tag
